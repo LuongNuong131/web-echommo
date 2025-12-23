@@ -39,8 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
-
-                        // [FIX] Cho phép truy cập trang lỗi để tránh loop 401 khi Spring forward request
+                        
+                        // [FIX] Cho phép truy cập trang lỗi để tránh loop
                         .requestMatchers("/error").permitAll()
 
                         // 2. Các API cần quyền cụ thể
@@ -60,21 +60,19 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // [FIX] Cấu hình CORS đầy đủ cho các môi trường Dev/Preview/Prod
+        // [FIX QUAN TRỌNG] Thêm domain thật của cưng vào đây
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",       // Vue Local Dev
                 "http://localhost:4173",       // Vue Preview
-                "http://127.0.0.1:5173",       // Localhost IP
-                "http://127.0.0.1:4173",       // Localhost IP Preview (Thường bị thiếu)
-                "https://htkhang111.github.io" // Production
+                "http://127.0.0.1:5173",
+                "http://127.0.0.1:4173",
+                "https://echommo.io.vn",       // Domain chính (HTTPS)
+                "https://www.echommo.io.vn",   // Domain có www
+                "http://echommo.io.vn"         // Dự phòng HTTP thường
         ));
 
-        // [FIX] Thêm HEAD để trình duyệt kiểm tra resource (ví dụ check ảnh avatar có tồn tại không)
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"));
-
-        // [FIX] Cho phép các Headers chuẩn thay vì "*" (An toàn hơn và tránh lỗi ở một số trình duyệt khắt khe)
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control", "X-Requested-With"));
-
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

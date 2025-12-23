@@ -31,7 +31,7 @@ services:
     networks:
       - echommo_net
 
-  # 3. CADDY (Sửa lại config)
+  # 3. CADDY
   caddy:
     image: caddy:latest
     container_name: echommo_https
@@ -65,20 +65,24 @@ volumes:
   caddy_data:
   caddy_config:
 
-# 🔥 ĐOẠN QUAN TRỌNG NHẤT: CẤU HÌNH CADDY MỚI 🔥
+# 🔥 CẤU HÌNH CADDY UPDATE 🔥
 configs:
   caddy_config:
     content: |
       echommo.io.vn {
-        # 1. ƯU TIÊN API (Xử lý trước)
+        encode gzip zstd
+
+        # 1. API: Trỏ thẳng vào tên Container cho chắc chắn
         handle /api/* {
-          reverse_proxy backend:8080
+          reverse_proxy echommo_api:8080 {
+             header_up Host {host}
+             header_up X-Real-IP {remote_host}
+          }
         }
 
-        # 2. CÁC LINK CÒN LẠI (Giao diện Game)
+        # 2. STATIC FILES (Game Interface)
         handle {
           root * /srv
-          encode gzip
           try_files {path} {path}/ /index.html
           file_server
         }
