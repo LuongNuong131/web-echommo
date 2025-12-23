@@ -16,7 +16,7 @@ services:
       - echommo_net
     command: --default-authentication-plugin=mysql_native_password
 
-  # 2. BACKEND (Spring Boot)
+  # 2. BACKEND
   backend:
     build: ./EchoMMO-Backend
     container_name: echommo_api
@@ -27,12 +27,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/echommo_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root123
-      # Frontend nằm cùng domain nên CORS rất dễ
       APP_FRONTEND_URL: https://echommo.io.vn
     networks:
       - echommo_net
 
-  # 3. CADDY (Web Server & SSL - Phục vụ cả Frontend lẫn Backend)
+  # 3. CADDY (Sửa lại config)
   caddy:
     image: caddy:latest
     container_name: echommo_https
@@ -41,11 +40,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Mount folder Frontend đã build vào Caddy
       - ./dist:/srv
       - caddy_data:/data
       - caddy_config:/config
-    # Lệnh chạy Caddy với file cấu hình bên dưới
     command: caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
     configs:
       - source: caddy_config
@@ -53,7 +50,7 @@ services:
     networks:
       - echommo_net
 
-  # 4. ADMINER (Quản lý Database)
+  # 4. ADMINER
   adminer:
     image: adminer
     container_name: echommo_db_admin
@@ -68,22 +65,22 @@ volumes:
   caddy_data:
   caddy_config:
 
-# Cấu hình Web Server (Quan trọng nhất)
+# 🔥 ĐOẠN QUAN TRỌNG NHẤT: CẤU HÌNH CADDY MỚI 🔥
 configs:
   caddy_config:
     content: |
       echommo.io.vn {
-        # 1. Phục vụ Frontend (File tĩnh)
-        root * /srv
-        encode gzip
-        
-        # Logic cho Vue.js (SPA): Nếu không tìm thấy file, trả về index.html
-        try_files {path} {path}/ /index.html
-        file_server
-
-        # 2. Phục vụ API (Chuyển tiếp /api sang Backend Java)
+        # 1. ƯU TIÊN API (Xử lý trước)
         handle /api/* {
           reverse_proxy backend:8080
+        }
+
+        # 2. CÁC LINK CÒN LẠI (Giao diện Game)
+        handle {
+          root * /srv
+          encode gzip
+          try_files {path} {path}/ /index.html
+          file_server
         }
       }
 
