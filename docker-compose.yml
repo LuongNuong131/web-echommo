@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. DATABASE
+  mysql:
+    image: mysql:8.0
+    container_name: echommo_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: echommo_db
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./sql_init:/docker-entrypoint-initdb.d
+    networks:
+      - echommo_net
+    command: --default-authentication-plugin=mysql_native_password
+
+  # 2. BACKEND
+  backend:
+    build: ./EchoMMO-Backend
+    container_name: echommo_api
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/echommo_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root123
+      APP_FRONTEND_URL: https://echommo.io.vn
+    networks:
+      - echommo_net
+
+  # 3. CADDY (HTTPS)
+  caddy:
+    image: caddy:latest
+    container_name: echommo_https
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    command: caddy reverse-proxy --from echommo.io.vn --to backend:8080
+    networks:
+      - echommo_net
+
+  # 🔥 [MỚI] 4. ADMINER (Quản lý DB qua Web)
+  adminer:
+    image: adminer
+    container_name: echommo_db_admin
+    restart: always
+    ports:
+      - "8081:8080"  # Truy cập qua cổng 8081
+    networks:
+      - echommo_net
+
+volumes:
+  db_data:
+
+networks:
+  echommo_net:
